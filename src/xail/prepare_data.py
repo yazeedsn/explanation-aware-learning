@@ -8,7 +8,7 @@ Usage:
 from pathlib import Path
 import typer
 
-from data_handlers import DataConfig, download_data, load_annotations, get_or_build_storage
+from .data_handlers import DataConfig, download_data, load_annotations, get_or_build_storage
 
 RAW_DIR = Path("data/raw")
 PROCESSED_DIR = Path("data/preprocessed")
