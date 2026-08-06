@@ -27,12 +27,13 @@ def main(
     img_size: int = IMG_SIZE,
     raw_dir: str | Path = RAW_DIR,
     processed_dir: str | Path = PROCESSED_DIR,
+    kaggle_token: str = None,
     workers: int = MAX_WORKERS
 ):
     raw_dir = Path(raw_dir)
     preprocessed_dir = Path(processed_dir)
     print(f"Fetching raw data into {raw_dir} ...")
-    raw_path = download_data(raw_dir)
+    raw_path = download_data(raw_dir, kaggle_token)
     print(f"Raw data available at: {raw_path}")
 
     config = DataConfig(
