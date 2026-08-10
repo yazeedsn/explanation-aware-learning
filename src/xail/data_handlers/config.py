@@ -1,31 +1,29 @@
-import hashlib
+"""Preprocessing configuration.
+
+No cache-tag hashing: each run writes to `processed_dir` under fixed
+filenames (see `metadata.py`). If you want to keep multiple preprocessed
+variants (different image size, different disease list, etc.) around at
+once, point them at different `processed_dir`s -- `build_storage` will
+refuse to silently overwrite a mismatched existing dataset (see
+`storage.build_storage`).
+"""
+
+from dataclasses import dataclass
 from pathlib import Path
-from dataclasses import dataclass, field
 
 
-# Data configuration class
 @dataclass(frozen=True)
 class DataConfig:
     raw_dir: Path
     processed_dir: Path
     csv_path: Path
     img_size: int
-    diseases: tuple[str, ...]
-    disease_to_idx: dict[str, int] = field(init=False)
+    diseases: tuple
 
-    def __post_init__(self):
-        object.__setattr__(self, "disease_to_idx", {d: i for i, d in enumerate(self.diseases)})
+    @property
+    def disease_to_idx(self) -> dict:
+        return {d: i for i, d in enumerate(self.diseases)}
 
     @property
     def num_classes(self) -> int:
         return len(self.diseases)
-
-    @property
-    def cache_tag(self) -> str:
-        """Hash of (disease list, img_size) - changing either invalidates
-        old storage automatically."""
-        key = "|".join(self.diseases) + f"|{self.img_size}"
-        return hashlib.md5(key.encode()).hexdigest()[:8]
-
-    def path(self, name: str) -> Path:
-        return self.processed_dir / f"{name}_{self.cache_tag}"

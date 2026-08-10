@@ -21,7 +21,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.scripts]
-prepare-data = "xail.prepare_data:main"
+build-dataset = "xail.build_dataset:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/xail"]
