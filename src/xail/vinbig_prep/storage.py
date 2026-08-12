@@ -28,9 +28,6 @@ def allocate_storage(processed_dir: Path, image_shape: tuple, mask_shape: tuple)
 
 def make_dicom_decoder(config: DataConfig, grouped: dict):
     """Default decode_fn: DICOM -> (resized image, per-disease masks).
-    Swap this out (see `build_storage`'s `decode_fn` argument) if the raw
-    format or decoding logic changes -- storage/orchestration code below
-    doesn't need to know how an image_id becomes an (image, masks) pair.
     """
     empty_annotations = pd.DataFrame(columns=["class_name", "x_min", "y_min", "x_max", "y_max"])
 
@@ -47,7 +44,10 @@ def make_dicom_decoder(config: DataConfig, grouped: dict):
 def build_storage(df: pd.DataFrame, config: DataConfig, decode_fn=None, max_workers: int = 8, overwrite: bool = False) -> DatasetMetadata:
     """
     Builds the processed dataset: memmap image/mask stores, a lookup
-    table (image_id -> row), and `metadata.json` describing all of it.
+    table (image_id -> row), per-image/per-disease classification labels
+    (derived from mask presence, so guaranteed consistent with the
+    explanation-loss annotation masks), and `metadata.json` describing
+    all of it.
 
     If `processed_dir` already holds a dataset:
       - matching this config (same diseases, same order, same img_size)
@@ -90,6 +90,7 @@ def build_storage(df: pd.DataFrame, config: DataConfig, decode_fn=None, max_work
     image_shape = (n, config.img_size, config.img_size)
     mask_shape = (n, config.num_classes, config.img_size, config.img_size)
     image_store, mask_store = allocate_storage(processed_dir, image_shape, mask_shape)
+    labels = np.zeros((n, config.num_classes), dtype=np.bool_)
 
     if decode_fn is None:
         grouped = group_by_image(df)
@@ -102,13 +103,20 @@ def build_storage(df: pd.DataFrame, config: DataConfig, decode_fn=None, max_work
             row = lookup[image_id]
             image_store[row] = image
             for disease, mask in masks.items():
-                mask_store[row, config.disease_to_idx[disease]] = mask
+                disease_idx = config.disease_to_idx[disease]
+                mask_store[row, disease_idx] = mask
+                # A classification label is derived from the same mask
+                # used for explanation supervision, so the two are always
+                # consistent (e.g. a box that clips to nothing counts as
+                # negative for both, rather than disagreeing).
+                labels[row, disease_idx] = mask.any()
 
     image_store.flush()
     mask_store.flush()
 
     with open(processed_dir / "lookup.json", "w") as f:
         json.dump(lookup, f)
+    np.save(processed_dir / "labels.npy", labels)
 
     metadata = DatasetMetadata(diseases=config.diseases, image_size=config.img_size, num_samples=n)
     save_metadata(metadata, processed_dir)

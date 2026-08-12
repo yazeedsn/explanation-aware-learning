@@ -6,9 +6,12 @@ from pathlib import Path
 
 import typer
 
-from .data_handlers import DataConfig, build_storage, download_data, load_annotations
+from .vinbig_prep import DataConfig, build_storage, download_data, load_annotations
 
-DISEASES = ("Aortic enlargement", "Cardiomegaly", "Pleural thickening", "Pulmonary fibrosis")
+DISEASES = ("Aortic enlargement",
+    "Pulmonary fibrosis",
+    "Pleural effusion",
+)
 
 
 def main(
