@@ -34,8 +34,8 @@ class ExplanationLoss(nn.Module):
         else:  # "sqr"
             return diff.square()
 
-    def gradcam_gradients(self, scores: torch.Tensor, feature_map: torch.Tensor) -> torch.Tensor:
-        return torch.autograd.grad(outputs=scores.sum(), inputs=feature_map, create_graph=True)[0]
+    def gradcam_gradients(self, scores: torch.Tensor, feature_map: torch.Tensor, create_graph=True) -> torch.Tensor:
+        return torch.autograd.grad(outputs=scores.sum(), inputs=feature_map, create_graph=create_graph)[0]
 
     def gradcam_weights(self, gradients: torch.Tensor) -> torch.Tensor:
         return gradients.mean(dim=(-2, -1), keepdim=True)
