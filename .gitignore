@@ -8,6 +8,8 @@ wheels/
 
 # data
 data/
+runs/
+examples/
 
 # Virtual environments
 .venv

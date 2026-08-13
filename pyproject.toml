@@ -5,6 +5,7 @@ description = "Explanation-aware learning for biomedical image classification"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "httpx>=0.28.1",
     "kaggle>=2.2.4",
     "matplotlib>=3.11.1",
     "numpy>=2.5.1",
