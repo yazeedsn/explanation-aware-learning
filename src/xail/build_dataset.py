@@ -8,10 +8,7 @@ import typer
 
 from .vinbig_prep import DataConfig, build_storage, download_data, load_annotations
 
-DISEASES = ("Aortic enlargement",
-    "Pulmonary fibrosis",
-    "Pleural effusion",
-)
+DISEASES = ("Aortic enlargement", "Pulmonary fibrosis", "Pleural effusion")
 
 
 def main(

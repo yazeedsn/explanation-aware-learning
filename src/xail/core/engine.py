@@ -7,7 +7,7 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
-from .config import ModelConfig, RunConfig, TrainConfig
+from .config import ExperimentConfig
 from .losses import CombinedLoss
 from .metrics import MetricBundle
 
@@ -24,22 +24,19 @@ class Trainer:
         loss_fn: CombinedLoss,
         optimizer: torch.optim.Optimizer,
         scheduler: torch.optim.lr_scheduler.LRScheduler | None,
-        train_config: TrainConfig,
-        model_config: ModelConfig,
-        run_config: RunConfig,
-        disease: str,
+        config: ExperimentConfig,
     ):
         self.model = model
         self.loss_fn = loss_fn
         self.optimizer = optimizer
         self.scheduler = scheduler
-        self.train_config = train_config
-        self.device = train_config.resolve_device()
+        self.config = config
+        self.device = config.resolve_device()
         self.non_blocking = self.device == "cuda"
-        self.output_dir = run_config.disease_dir(disease)
+        self.output_dir = config.checkpoint_dir
 
-        self.train_metrics = MetricBundle(model_config.num_classes, self.device)
-        self.val_metrics = MetricBundle(model_config.num_classes, self.device)
+        self.train_metrics = MetricBundle( self.device)
+        self.val_metrics = MetricBundle(self.device)
         self.history = defaultdict(list)
         self.best_val_loss = float("inf")
 
@@ -67,16 +64,17 @@ class Trainer:
 
         return self.train_metrics.compute()
 
-    @torch.inference_mode()
+    #@torch.inference_mode()
     def validate_epoch(self, val_dl: DataLoader):
         self.model.eval()
         self.val_metrics.reset()
 
-        for images, labels, _masks in val_dl:
-            images, labels = self._to_device(images, labels)
-            logits, _feature_map = self.model(images)
-            loss = torch.nn.functional.cross_entropy(logits, labels)
-            self.val_metrics.update(loss, logits, labels)
+        for images, labels, masks in val_dl:
+            images, labels, masks = self._to_device(images, labels, masks)
+            logits, feature_map = self.model(images)
+            loss, parts = self.loss_fn(logits, feature_map, labels, masks)
+            self.val_metrics.update(loss.detach(), logits.detach(), labels, cls_loss=parts["cls"],
+                exp_loss=parts["exp"])
 
         return self.val_metrics.compute()
 
@@ -91,10 +89,12 @@ class Trainer:
             self.history[f"{prefix}_{name}"].append(value)
 
     def _save_checkpoint(self, name: str):
-        torch.save(self.model.state_dict(), self.output_dir / name)
+        weights_path =  self.output_dir / 'weights'
+        weights_path.mkdir(parents=True, exist_ok=True)
+        torch.save(self.model.state_dict(), weights_path / name)
 
     def fit(self, train_dl: DataLoader, val_dl: DataLoader, epochs: int | None = None, verbose: bool = True) -> pd.DataFrame:
-        epochs = epochs or self.train_config.epochs
+        epochs = epochs or self.config.epochs
 
         for epoch in range(epochs):
             train_metrics = self.train_epoch(train_dl, epoch, epochs)

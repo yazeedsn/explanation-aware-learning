@@ -1,6 +1,6 @@
 """Allocates the on-disk image/mask stores and drives the (parallel
 decode, sequential write) preprocessing loop. Writes `metadata.json` at
-the end so the output directory is self-describing (see `metadata.py`).
+the end so the output directory is self-describing (see `core.datasets.py`).
 """
 
 import json
@@ -15,7 +15,8 @@ from .annotations import build_image_universe, group_by_image
 from .config import DataConfig
 from .dicom_io import load_and_resize_image
 from .masks import build_disease_masks
-from .metadata import DatasetMetadata, load_metadata, save_metadata, METADATA_FILENAME
+from ..core.datasets import MetadataDataset
+from ..core.data import METADATA_FILENAME, load_metadata, save_metadata
 
 
 def allocate_storage(processed_dir: Path, image_shape: tuple, mask_shape: tuple):
@@ -41,7 +42,7 @@ def make_dicom_decoder(config: DataConfig, grouped: dict):
     return decode_one
 
 
-def build_storage(df: pd.DataFrame, config: DataConfig, decode_fn=None, max_workers: int = 8, overwrite: bool = False) -> DatasetMetadata:
+def build_storage(df: pd.DataFrame, config: DataConfig, decode_fn=None, max_workers: int = 8, overwrite: bool = False) -> MetadataDataset:
     """
     Builds the processed dataset: memmap image/mask stores, a lookup
     table (image_id -> row), per-image/per-disease classification labels
@@ -118,6 +119,6 @@ def build_storage(df: pd.DataFrame, config: DataConfig, decode_fn=None, max_work
         json.dump(lookup, f)
     np.save(processed_dir / "labels.npy", labels)
 
-    metadata = DatasetMetadata(diseases=config.diseases, image_size=config.img_size, num_samples=n)
+    metadata = MetadataDataset(diseases=config.diseases, image_size=config.img_size, num_samples=n)
     save_metadata(metadata, processed_dir)
     return metadata

@@ -1,6 +1,6 @@
 import torch
 import torch.nn.functional as F
-from torchmetrics.classification import MulticlassAccuracy, MulticlassAUROC
+from torchmetrics.classification import MulticlassAccuracy
 from torchmetrics.aggregation import MeanMetric
 
 from.losses import ExplanationLoss
@@ -10,22 +10,20 @@ class MetricBundle:
     Extend this dict if you want extra metrics -- the trainer and history
     logging don't need to change."""
 
-    def __init__(self, num_classes: int, device: str):
+    def __init__(self, device: str):
         self.loss = MeanMetric().to(device)
-        self.acc = MulticlassAccuracy(num_classes=num_classes).to(device)
-        self.auroc = MulticlassAUROC(num_classes=num_classes).to(device)
-        self.cls_loss = MeanMetric().to(device)    # optinal
-        self.exp_loss = MeanMetric().to(device)    # optinal
+        self.acc = MulticlassAccuracy(num_classes=2).to(device)
+        self.cls_loss = MeanMetric().to(device)
+        self.exp_loss = MeanMetric().to(device)
 
     def reset(self):
-        for m in (self.loss, self.acc, self.auroc, self.cls_loss, self.exp_loss):
+        for m in (self.loss, self.acc, self.cls_loss, self.exp_loss):
             m.reset()
 
     def update(self, loss: torch.Tensor, logits: torch.Tensor, labels: torch.Tensor,
         cls_loss: float | None = None, exp_loss: float | None = None):
         self.loss.update(loss, weight=labels.size(0))
         self.acc.update(logits, labels)
-        self.auroc.update(logits, labels)
         if cls_loss is not None:
             self.cls_loss.update(cls_loss, weight=labels.size(0))
         if exp_loss is not None:
@@ -35,7 +33,6 @@ class MetricBundle:
         return {
             "loss": self.loss.compute().item(),
             "acc": self.acc.compute().item(),
-            "auc": self.auroc.compute().item(),
             "cls_loss": self.cls_loss.compute().item(),
             "exp_loss": self.exp_loss.compute().item()
         }

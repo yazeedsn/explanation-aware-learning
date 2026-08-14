@@ -2,13 +2,11 @@
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import Dataset
 from dataclasses import asdict, dataclass
 
-from .config import TrainConfig
-
 @dataclass(frozen=True)
-class DatasetMetadata:
+class MetadataDataset:
     """Self-contained description of a processed dataset directory.
 
     `diseases` is the authoritative mask-channel order: `mask_store[row, i]`
@@ -47,7 +45,7 @@ class DatasetMetadata:
         return asdict(self)
 
     @classmethod
-    def from_dict(cls, d: dict) -> "DatasetMetadata":
+    def from_dict(cls, d: dict) -> "MetadataDataset":
         d = dict(d)
         d["diseases"] = tuple(d["diseases"])
         allowed = set(cls.__dataclass_fields__.keys())
@@ -67,7 +65,7 @@ class ProcessedDataset:
     `labels[row, i]` is True iff `masks[row, i]` has any annotated pixel.
     """
 
-    metadata: DatasetMetadata
+    metadata: MetadataDataset
     lookup: dict
     images: np.memmap
     masks: np.memmap
@@ -99,27 +97,3 @@ class BinaryDiseaseDataset(Dataset):
         mask = torch.from_numpy(self.dataset.masks[row, self.disease_idx].copy()).float()
 
         return image, self.labels[idx], mask
-
-
-def build_dataloaders(
-    task: dict, dataset: ProcessedDataset, disease_idx: int, train: TrainConfig,
-) -> tuple:
-    """Builds train/val/test loaders from a task dict produced by
-    `DiseaseTaskBuilder.build()`."""
-
-    def make_loader(ids, batch_size, shuffle, drop_last=False):
-        ds = BinaryDiseaseDataset(ids, task["labels"], dataset, disease_idx)
-        return DataLoader(
-            ds, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last,
-            num_workers=train.num_workers, persistent_workers=train.num_workers > 0,
-            pin_memory=True,
-        )
-
-    # drop_last on the train loader only: BatchNorm needs >1 sample per
-    # channel in train mode, so a size-1 remainder batch would crash it.
-    # Not applied to val/test since model.eval() doesn't use batch stats,
-    # and we don't want to silently drop evaluation samples.
-    train_dl = make_loader(task["train_ids"], train.train_batch_size, shuffle=True, drop_last=True)
-    val_dl = make_loader(task["val_ids"], train.eval_batch_size, shuffle=False)
-    test_dl = make_loader(task["test_ids"], train.eval_batch_size, shuffle=False)
-    return train_dl, val_dl, test_dl

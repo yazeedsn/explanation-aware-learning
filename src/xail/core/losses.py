@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .config import ExplanationLossConfig
+from .config import ExperimentConfig
 
 
 class ExplanationLoss(nn.Module):
@@ -104,7 +104,7 @@ class CombinedLoss(nn.Module):
         disease-positive, box-annotated samples).
     """
 
-    def __init__(self, config: ExplanationLossConfig):
+    def __init__(self, config: ExperimentConfig):
         super().__init__()
         self.config = config
         self.explanation_loss = ExplanationLoss(

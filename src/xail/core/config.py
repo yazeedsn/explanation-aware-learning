@@ -4,89 +4,38 @@ switching datasets / preprocessing / experiments means editing this file
 (or constructing a new config in a script).
 """
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 
 @dataclass
-class DataConfig:
-    """Where the preprocessed dataset lives."""
-    processed_dir: Path = Path("./processed")
-
-
-@dataclass
-class SplitConfig:
-    """Train/val/test split behavior for a single-disease binary task."""
-
-    val_fraction: float = 0.15
-    test_fraction: float = 0.15
-    seed: int = 42
-
-
-@dataclass
-class ModelConfig:
-    """Backbone / classification head configuration."""
-
-    dropout: float = 0.3
-    num_classes: int = 2
-    pretrained: bool = True
-    feature_node: str = "features.denseblock4"
-    logits_node: str = "classifier"
-
-
-@dataclass
-class ExplanationLossConfig:
-    """Grad-CAM explanation loss configuration. Set `alpha=0.0` to fall
-    back to a pure BCE/cross-entropy baseline without disabling the code
-    path (the loss term is just weighted to zero)."""
-
-    enabled: bool = True
-    alpha: float = 1.0
-    quantile: float = 0.5
-    temperature: float = 0.1
-    score_mode: str = "alg"  # "alg" | "abs" | "sqr"
-    use_probs: bool = False
-    only_positive_samples: bool = True  # only supervise samples that have an annotation mask
-
-
-@dataclass
-class TrainConfig:
-    epochs: int = 60
-    lr: float = 2e-4
-    weight_decay: float = 1e-4
-    train_batch_size: int = 12
-    eval_batch_size: int = 12
-    num_workers: int = 4
-    seed: int = 42
-    device: str = "auto"  # "auto" | "cuda" | "cpu"
+class ExperimentConfig:
+    processed_dir: Path = Path("./processed")           # path of processed data to load
+    checkpoint_dir: Path = Path("./checkpoints")        # path to save model checkpoints, figures, plots.
+    epochs: int = 10                                    # total number of traing epochs
+    lr: float = 2e-4                                    # learning rate for the optimizer
+    weight_decay: float = 1e-4                          # weight_decay used training regulization
+    train_batch_size: int = 12                          # batch_size for the training dataloader.
+    eval_batch_size: int = 12                           # batch_size for validation and test dataloaders
+    num_workers: int = 4                                # number of workers for the dataloaders
+    val_fraction: float = 0.1                           # portion of the validation split
+    test_fraction: float = 0.1                          # portion of the test split
+    seed: int = 42                                      # random seed for the experiment
+    device: str = "auto"                                # device to use for training
+    dropout: float = 0.3                                # dropout before the final classification layer.
+    pretrained: bool = True                             # use a Densenet model
+    feature_node: str = "features.denseblock4"          # name of the layer to use for getting the feature maps
+    logits_node: str = "classifier"                     # name of the layer to use for getting the logits
+    enabled: bool = True                                # use explanation loss in the training
+    alpha: int = 1                                      # weight of the explanation loss
+    quantile: float = 0.5                               # top largest #qunatile of the gradients to consider in the explanation loss
+    temperature: float = 0.5                            # temperature for the soft masking the gradients.
+    score_mode: str = "sqr"                             # alg: z1 - z0, abs: |z1 - z0|, sqr: (z1-z0)^2 z1, z0 is the logits of positive class and negative class, respectivly.
+    use_probs: bool = False                             # use probabilities instead of logits (applies sigmoid to logits)
+    only_positive_samples: bool = True                  # apply explination to positive class only (recommendation: always keep True)
 
     def resolve_device(self) -> str:
         if self.device != "auto":
             return self.device
         import torch
         return "cuda" if torch.cuda.is_available() else "cpu"
-
-
-@dataclass
-class RunConfig:
-    """Where results for a given run/disease get written."""
-
-    runs_dir: Path = Path("./runs")
-
-    def disease_dir(self, disease: str) -> Path:
-        path = self.runs_dir / disease.replace(" ", "_").lower()
-        path.mkdir(parents=True, exist_ok=True)
-        return path
-
-
-@dataclass
-class ExperimentConfig:
-    """Top-level bundle passed around the pipeline."""
-
-    data: DataConfig = field(default_factory=DataConfig)
-    split: SplitConfig = field(default_factory=SplitConfig)
-    model: ModelConfig = field(default_factory=ModelConfig)
-    explanation_loss: ExplanationLossConfig = field(default_factory=ExplanationLossConfig)
-    train: TrainConfig = field(default_factory=TrainConfig)
-    run: RunConfig = field(default_factory=RunConfig)
-    disease: str = "Aortic enlargement"
