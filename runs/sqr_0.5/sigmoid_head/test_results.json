@@ -1,0 +1,9 @@
+{
+    "test_loss": 0.5514453649520874,
+    "test_acc": 0.8937172889709473,
+    "test_cls_loss": NaN,
+    "test_exp_loss": NaN,
+    "top_saliency_precision": 0.4235372543334961,
+    "all_saliency_precision": 0.1839921474456787,
+    "annotation_coverage": 0.446601927280426
+}

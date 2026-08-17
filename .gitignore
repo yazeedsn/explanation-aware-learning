@@ -6,9 +6,12 @@ dist/
 wheels/
 *.egg-info
 
+# weights 
+weights/
+*.pt
+
 # data
 data/
-runs/
 examples/
 
 # Virtual environments
