@@ -122,8 +122,6 @@ Probability-Based Scores
 
 ## Repository structure
 
-## Repository structure
-
 ```
 src/xail/                    # installable package (see pyproject.toml)
   vinbig_prep/                  DICOM preprocessing -> self-describing processed dataset directory
