@@ -67,15 +67,16 @@ In addition to the classification accuracy, the paper considers 3 other evaluati
 
 1) Top Saliency Percesion:
 measures the fraction of the top-k saliency heatmap inside the disease annoated area. We focus on the most relevant two of them.
-$$
-\text{Precision}_{top} = \frac{\sum_{i,j} \hat{H}^+(i,j)\, M(i,j)}{\sum_{i,j} \hat{H}^+(i,j)}
-$$
+
+$$\text{Precision}_{all} = \frac{\sum_{i,j} \hat{H}(i,j) M(i,j)}{\sum_{i,j} \hat{H}(i,j)}$$
 
 2) All Saliency Percsion: 
 measures the fraction of the total saliency heatmap inside the disease annoated area.
+
 $$
 \text{Precision}_{all} = \frac{\sum_{i,j} \hat{H}(i,j)\, M(i,j)}{\sum_{i,j} \hat{H}(i,j)}
 $$
+
 ## Experiments
  All experiments in this project are conducted as binary classifiction on one selected disease, "Pleural Effusion" in this project. The dataset is subsampled to include an approximate rate of 1:1 positive to negative classes.
 
@@ -107,7 +108,6 @@ Probability-Based Scores
 
 | | Baseline | `sqr` ((z1 − z0)²) |
 |---|---|---|
-| Explanation loss converges? | **No** — flat/noisy for all 60 epochs | **Yes** — drops in ~10 epochs, plateaus at ~0.44–0.47 |
 | Top saliency precision (test) | ~0.18 | ~0.46 |
 | All saliency precision (test) | ~0.10 | ~0.20 |
 | Classification accuracy/AUC | ~0.93 | ~0.93 |
