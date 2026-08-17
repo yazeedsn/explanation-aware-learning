@@ -29,8 +29,8 @@ from ..core import ModelConfig, build_model
 from ..core.losses import ExplanationLoss
 
 class Settings(BaseModel):
-    checkpoint: str = os.environ.get("CHECKPOINT", "runs/runs_alpha_1/pulmonary_fibrosis/best.pt")
-    disease: str = os.environ.get("DISEASE", "Pleural fibrosis")
+    checkpoint: str = os.environ.get("CHECKPOINT", "runs/sqr_1/logits_head/weights/best.pt")
+    disease: str = os.environ.get("DISEASE", "Pleural effusion")
     img_size: int = int(os.environ.get("IMG_SIZE", 224))
     device: str = os.environ.get("DEVICE", "cuda" if torch.cuda.is_available() else "cpu")
     quantile: float = float(os.environ.get("QUANTILE", 1))

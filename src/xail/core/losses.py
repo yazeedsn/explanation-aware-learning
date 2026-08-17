@@ -51,12 +51,10 @@ class ExplanationLoss(nn.Module):
 
 
     def soft_mask(self, heatmap):
-        threshold = torch.quantile(
-            heatmap.flatten(1), self.quantile, dim=1
-        )
-        return torch.sigmoid(
-            (heatmap - threshold[:, None, None]) / self.temperature
-        )
+        threshold = torch.quantile(heatmap.flatten(1), 1 - self.quantile, dim=1)
+        z = (heatmap - threshold[:, None, None]) / self.temperature
+        mask = torch.sigmoid(z)
+        return mask
 
     def get_heatmaps(self, scores: torch.Tensor, feature_map: torch.Tensor) -> torch.Tensor:
         gradients = self.gradcam_gradients(scores, feature_map)
