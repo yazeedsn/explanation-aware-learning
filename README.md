@@ -171,30 +171,6 @@ runs/                          Saved outputs per (score_mode, alpha, head) combo
                                 exp_loss plots, test_results.json, checkpoints
 ```
 
-## Quickstart
-
-```bash
-# 1. Preprocess
-python build_dataset.py --download --raw-dir data/raw --processed-dir processed
-
-# 2. Train (edit disease/score_mode/alpha in run_experiment.py or build an ExperimentConfig directly)
-python run_experiment.py
-
-# 3. Evaluate on the held-out test split
-python evaluate.py --processed-dir processed --disease "Cardiomegaly" \
-    --checkpoint runs/cardiomegaly/best.pt --score-mode sqr
-
-# 4. Visualize Grad-CAM against ground-truth boxes
-python visualize_explanations.py --processed-dir processed --disease "Cardiomegaly" \
-    --checkpoint runs/cardiomegaly/best.pt --score-mode sqr --n-samples 8
-
-# 5. Serve predictions
-CHECKPOINT=runs/cardiomegaly/best.pt DISEASE="Cardiomegaly" SCORE_MODE=sqr \
-    uvicorn api:app --host 0.0.0.0 --port 8000
-python predict_client.py chest_xray.png
-```
-
-Running a study (sweeping α, comparing score formulations) is a matter of building a list of `ExperimentConfig`s and looping `run_experiment.run()` over them — nothing else needs to change.
 
 ## Debug Log
 
