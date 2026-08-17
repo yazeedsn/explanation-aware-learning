@@ -5,6 +5,7 @@ description = "Explanation-aware learning for biomedical image classification"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastapi>=0.141.1",
     "httpx>=0.28.1",
     "kaggle>=2.2.4",
     "matplotlib>=3.11.1",
@@ -12,12 +13,14 @@ dependencies = [
     "opencv-python>=5.0.0.93",
     "pandas>=3.0.5",
     "pydicom>=3.0.2",
+    "python-multipart>=0.0.32",
     "scikit-learn>=1.9.0",
     "torch>=2.13.0",
     "torchmetrics>=1.9.0",
     "torchvision>=0.28.0",
     "tqdm>=4.70.0",
     "typer>=0.27.1",
+    "uvicorn>=0.52.3",
 ]
 
 [build-system]

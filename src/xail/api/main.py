@@ -25,17 +25,18 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from PIL import Image
 from pydantic import BaseModel
 
-from ..core import ModelConfig, build_model
+from ..core import ExperimentConfig, build_model
 from ..core.losses import ExplanationLoss
 
 class Settings(BaseModel):
-    checkpoint: str = os.environ.get("CHECKPOINT", "runs/sqr_1/logits_head/weights/best.pt")
+    checkpoint: str = os.environ.get("CHECKPOINT", "runs/abs_1/logits_head/weights/last.pt")
     disease: str = os.environ.get("DISEASE", "Pleural effusion")
     img_size: int = int(os.environ.get("IMG_SIZE", 224))
     device: str = os.environ.get("DEVICE", "cuda" if torch.cuda.is_available() else "cpu")
-    quantile: float = float(os.environ.get("QUANTILE", 1))
+    quantile: float = float(os.environ.get("QUANTILE", 0.5))
     score_mode: str = os.environ.get("SCORE_MODE", "sqr")  # must match what the checkpoint was trained with
-    use_probs: bool = os.environ.get("USE_PROBS", "false").lower() == "true"
+    use_probs: bool = os.environ.get("USE_PROBS", "true").lower() == "true"
+    temperature: float = float(os.environ.get("TEMPERATURE", 0.05))  # soft-mask temperature; must match training config
 
 
 settings = Settings()
@@ -52,7 +53,8 @@ class PredictionResponse(BaseModel):
 @lru_cache(maxsize=1)
 def get_model():
     """Loaded once per process and cached -- not reloaded per request."""
-    model = build_model(ModelConfig(pretrained=False, num_classes=2))
+    model_config = ExperimentConfig(pretrained=False)
+    model = build_model(model_config)
     state_dict = torch.load(settings.checkpoint, map_location=settings.device)
     model.load_state_dict(state_dict)
     model.to(settings.device)
@@ -62,7 +64,10 @@ def get_model():
 
 @lru_cache(maxsize=1)
 def get_explainer() -> ExplanationLoss:
-    return ExplanationLoss(quantile=settings.quantile, score_mode=settings.score_mode, use_probs=settings.use_probs)
+    return ExplanationLoss(
+        quantile=settings.quantile, score_mode=settings.score_mode,
+        use_probs=settings.use_probs, temperature=settings.temperature,
+    )
 
 
 def preprocess_image(raw_bytes: bytes) -> tuple:
